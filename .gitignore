@@ -1,3 +1,4 @@
-CppUTest_tests
 lib/
 objs/
+CppUTest_tests
+CppUTestExt_tests
