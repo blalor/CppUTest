@@ -1,0 +1,4 @@
+lib/
+objs/
+CppUTest_tests
+CppUTestExt_tests

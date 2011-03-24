@@ -83,6 +83,10 @@ ifndef CPPUTEST_USE_GCOV
 	CPPUTEST_USE_GCOV = N
 endif
 
+ifndef CPPUTEST_GCOV_DIR
+    CPPUTEST_GCOV_DIR = gcov
+endif
+
 # Default warnings
 ifndef CPPUTEST_WARNINGFLAGS
 	CPPUTEST_WARNINGFLAGS = -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
@@ -280,21 +284,21 @@ flags:
 	@$(call debug_print_list,$(LD_LIBRARIES))
 	@echo "Create libraries with ARFLAGS:"
 	@$(call debug_print_list,$(ARFLAGS))
-	
-	
+
+
 $(TEST_TARGET): $(TEST_OBJS) $(MOCKS_OBJS)  $(PRODUCTION_CODE_START) $(TARGET_LIB) $(USER_LIBS) $(PRODUCTION_CODE_END) $(CPPUTEST_LIB) $(STDLIB_CODE_START) 
 	$(SILENCE)echo Linking $@
 	$(SILENCE)$(LINK.o) -o $@ $^ $(LD_LIBRARIES)
 
 $(TARGET_LIB): $(OBJ)
 	$(SILENCE)echo Building archive $@
-	$(SILENCE)mkdir -p lib
+	$(SILENCE)mkdir -p $(CPPUTEST_LIB_DIR)
 	$(SILENCE)$(AR) $(ARFLAGS) $@ $^
 	$(SILENCE)$(RANLIB) $@
 
 test: $(TEST_TARGET)
 	$(RUN_TEST_TARGET) | tee $(TEST_OUTPUT)
-	
+
 vtest: $(TEST_TARGET)
 	$(RUN_TEST_TARGET) -v  | tee $(TEST_OUTPUT)
 
@@ -316,15 +320,15 @@ endif
 clean:
 	$(SILENCE)echo Making clean
 	$(SILENCE)$(RM) $(STUFF_TO_CLEAN)
-	$(SILENCE)rm -rf gcov $(CPPUTEST_OBJS_DIR)
+	$(SILENCE)rm -rf $(CPPUTEST_GCOV_DIR) $(CPPUTEST_OBJS_DIR)
 	$(SILENCE)find . -name "*.gcno" | xargs rm -f
 	$(SILENCE)find . -name "*.gcda" | xargs rm -f
-	
+
 #realclean gets rid of all gcov, o and d files in the directory tree
 #not just the ones made by this makefile
 .PHONY: realclean
 realclean: clean
-	$(SILENCE)rm -rf gcov
+	$(SILENCE)rm -rf $(CPPUTEST_GCOV_DIR)
 	$(SILENCE)find . -name "*.gdcno" | xargs rm -f
 	$(SILENCE)find . -name "*.[do]" | xargs rm -f	
 
@@ -339,17 +343,17 @@ else
 		gcov --object-directory $(CPPUTEST_OBJS_DIR)/$$f $$f >> $(GCOV_OUTPUT) 2>>$(GCOV_ERROR) ; \
 	done
 endif
-	$(CPPUTEST_HOME)/scripts/filterGcov.sh $(GCOV_OUTPUT) $(GCOV_ERROR) $(GCOV_REPORT) $(TEST_OUTPUT)
+	$(SILENCE)$(CPPUTEST_HOME)/scripts/filterGcov.sh $(GCOV_OUTPUT) $(GCOV_ERROR) $(GCOV_REPORT) $(TEST_OUTPUT)
 	$(SILENCE)cat $(GCOV_REPORT)
-	$(SILENCE)mkdir -p gcov
-	$(SILENCE)mv *.gcov gcov
-	$(SILENCE)mv gcov_* gcov
-	$(SILENCE)echo "See gcov directory for details"
+	$(SILENCE)mkdir -p  $(CPPUTEST_GCOV_DIR)
+	$(SILENCE)mv *.gcov $(CPPUTEST_GCOV_DIR)
+	$(SILENCE)mv gcov_* $(CPPUTEST_GCOV_DIR)
+	$(SILENCE)echo "See $(CPPUTEST_GCOV_DIR) directory for details"
  
 .PHONEY: format
 format: 
 	$(CPPUTEST_HOME)/scripts/reformat.sh $(PROJECT_HOME_DIR)
-	
+
 debug:
 	@echo
 	@echo "Target Source files:"
