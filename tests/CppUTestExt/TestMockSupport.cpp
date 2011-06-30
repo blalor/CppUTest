@@ -126,7 +126,7 @@ TEST(MockSupportTest, ignoreOtherCallsDoesntIgnoreMultipleCallsOfTheSameFunction
 	mock().actualCall("foo");
 	mock().actualCall("foo");
 
-	addFunctionToExpectationsList("foo")->callWasMade();
+	addFunctionToExpectationsList("foo")->callWasMade(1);
 	MockUnexpectedCallHappenedFailure expectedFailure(mockFailureTest(), "foo", *expectationsList);
 	CHECK_EXPECTED_MOCK_FAILURE(expectedFailure);
 }
@@ -155,8 +155,8 @@ TEST(MockSupportTest, expectMultipleCallsThatHappen)
 
 TEST(MockSupportTest, expectOneCallHoweverMultipleHappened)
 {
-	addFunctionToExpectationsList("foo")->callWasMade();
-	addFunctionToExpectationsList("foo")->callWasMade();
+	addFunctionToExpectationsList("foo")->callWasMade(1);
+	addFunctionToExpectationsList("foo")->callWasMade(2);
 	MockUnexpectedCallHappenedFailure expectedFailure(mockFailureTest(), "foo", *expectationsList);
 
 	mock().expectOneCall("foo");
@@ -339,7 +339,7 @@ TEST(MockSupportTest, ignoreOtherParametersMultipleCallsButOneDidntHappen)
 {
 	MockExpectedFunctionCall* call = addFunctionToExpectationsList("boo");
 	call->ignoreOtherParameters();
-	call->callWasMade();
+	call->callWasMade(1);
 	call->parametersWereIgnored();
 	call->ignoreOtherParameters();
 	addFunctionToExpectationsList("boo")->ignoreOtherParameters();
@@ -465,6 +465,14 @@ TEST(MockSupportTest, hasDataBeenSet)
 	CHECK(!mock().hasData("data"));
 	mock().setData("data", 10);
 	CHECK(mock().hasData("data"));
+}
+
+TEST(MockSupportTest, dataCanBeChanged)
+{
+	mock().setData("data", 10);
+	mock().setData("data", 15);
+	LONGS_EQUAL(15, mock().getData("data").getIntValue());
+
 }
 
 TEST(MockSupportTest, uninitializedData)
@@ -800,6 +808,15 @@ TEST(MockSupportTest, expectMultipleMultipleCallsWithParameters)
 	mock().actualCall("boo").withParameter("double", 1.0).withParameter("int", 1).withParameter("string", "string");
 	mock().checkExpectations();
 	CHECK_NO_MOCK_FAILURE();
+}
+
+TEST(MockSupportTest, whenCallingDisabledOrIgnoredActualCallsThenTheyDontReturnPreviousCallsValues)
+{
+	mock().expectOneCall("boo").ignoreOtherParameters().andReturnValue(10);
+	mock().ignoreOtherCalls();
+	mock().actualCall("boo");
+	mock().actualCall("An Ignored Call");
+	CHECK(!mock().hasReturnValue());
 }
 
 TEST(MockSupportTest, tracing)

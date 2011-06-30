@@ -34,6 +34,7 @@
 #define MOCK_SUPPORT_SCOPE_PREFIX "!!!$$$MockingSupportScope$$$!!!"
 
 static MockSupport global_mock;
+int MockSupport::callOrder_ = 0;
 
 MockSupport& mock(const SimpleString& mockName)
 {
@@ -102,6 +103,7 @@ void MockSupport::clear()
 	compositeCalls_.clear();
 	ignoreOtherCalls_ = false;
 	enabled_ = true;
+	callOrder_ = 0;
 
 	for (MockNamedValueListNode* p = data_.begin(); p; p = p->next()) {
 		MockSupport* support = getMockSupport(p);
@@ -136,18 +138,21 @@ MockFunctionCall& MockSupport::expectNCalls(int amount, const SimpleString& func
 
 MockActualFunctionCall* MockSupport::createActualFunctionCall()
 {
-	if (lastActualFunctionCall_) delete lastActualFunctionCall_;
-
-	lastActualFunctionCall_ = new MockActualFunctionCall(reporter_, expectations_);
+	lastActualFunctionCall_ = new MockActualFunctionCall(++callOrder_, reporter_, expectations_);
 	return lastActualFunctionCall_;
 }
 
 MockFunctionCall& MockSupport::actualCall(const SimpleString& functionName)
 {
+	if (lastActualFunctionCall_) {
+		lastActualFunctionCall_->checkExpectations();
+		delete lastActualFunctionCall_;
+		lastActualFunctionCall_ = NULL;
+	}
+
 	if (!enabled_) return MockIgnoredCall::instance();
 	if (tracing_) return MockFunctionCallTrace::instance().withName(functionName);
 
-	if (lastActualFunctionCall_) lastActualFunctionCall_->checkExpectations();
 
 	if (!expectations_.hasExpectationWithName(functionName) && ignoreOtherCalls_) {
 		return MockIgnoredCall::instance();
@@ -255,40 +260,43 @@ bool MockSupport::hasData(const SimpleString& name)
 	return data_.getValueByName(name) != NULL;
 }
 
-MockNamedValue* MockSupport::createAndStoreData(const SimpleString& name)
+MockNamedValue* MockSupport::retrieveDataFromStore(const SimpleString& name)
 {
-	MockNamedValue* newData = new MockNamedValue(name);
-	data_.add(newData);
+	MockNamedValue* newData = data_.getValueByName(name);
+	if (newData == NULL) {
+		newData = new MockNamedValue(name);
+		data_.add(newData);
+	}
 	return newData;
 }
 
 void MockSupport::setData(const SimpleString& name, int value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, const char* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, double value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setData(const SimpleString& name, void* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setValue(value);
 }
 
 void MockSupport::setDataObject(const SimpleString& name, const SimpleString& type, void* value)
 {
-	MockNamedValue* newData = createAndStoreData(name);
+	MockNamedValue* newData = retrieveDataFromStore(name);
 	newData->setObjectPointer(type, value);
 }
 

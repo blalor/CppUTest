@@ -193,6 +193,11 @@ TEST(Utest, compareDoubles)
 	CHECK(!doubles_equal(1.0, nan, 0.01));
 	CHECK(!doubles_equal(1.0, 1.001, nan));
 	CHECK(!doubles_equal(1.0, 1.1, 0.05));
+
+	double a = 1.2345678;
+	CHECK(doubles_equal(a, a, 0.000000001));
+
+
 }
 
 
@@ -404,6 +409,32 @@ TEST(Utest, TestStopsAfterSetupFailure)
 	LONGS_EQUAL(0, stopAfterFailure);
 }
 
+static bool destructorWasCalledOnFailedTest = false;
+
+class DestructorOughtToBeCalled
+{
+public:
+	virtual ~DestructorOughtToBeCalled()
+	{
+		destructorWasCalledOnFailedTest = true;
+	}
+};
+
+static void _destructorCalledForLocalObjects()
+{
+	DestructorOughtToBeCalled pleaseCallTheDestructor;
+	destructorWasCalledOnFailedTest = false;
+	FAIL("fail");
+}
+
+/* This test can only pass when we use exception handling instead of longjmp */
+IGNORE_TEST(Utest, DestructorIsCalledForLocalObjectsWhenTheTestFails)
+{
+	fixture->setTestFunction(_destructorCalledForLocalObjects);
+	fixture->runAllTests();
+	CHECK(destructorWasCalledOnFailedTest);
+}
+
 TEST_BASE(MyOwnTest)
 {
 	MyOwnTest() :
@@ -443,3 +474,5 @@ TEST(UtestMyOwn, NullParameters)
 	TestRegistry* reg = TestRegistry::getCurrentRegistry();
 	nullTest.shouldRun(reg->getGroupFilter(), reg->getNameFilter());
 }
+
+

@@ -90,6 +90,7 @@ public:
 protected:
     virtual MockActualFunctionCall *createActualFunctionCall();
 private:
+    static int callOrder_;
 
     MockFailureReporter *reporter_;
     MockFailureReporter defaultReporter_;
@@ -107,7 +108,7 @@ private:
     bool wasLastCallFulfilled();
     void failTestWithForUnexpectedCalls();
 
-	MockNamedValue* createAndStoreData(const SimpleString& name);
+	MockNamedValue* retrieveDataFromStore(const SimpleString& name);
 
 	MockSupport* getMockSupport(MockNamedValueListNode* node);
 };

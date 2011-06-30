@@ -54,9 +54,31 @@
 #	CPPUTEST_LDFLAGS - Linker flags
 #----------
 
+# Some behavior is weird on some platforms. Need to discover the platform.
+UNAME_OUTPUT = "$(shell uname -a)"
+MACOSX_STR = Darwin
+MINGW_STR = MINGW
+UNKNWOWN_OS_STR = Unknown
+
+ifeq ($(findstring $(MINGW_STR),$(UNAME_OUTPUT)),$(MINGW_STR))
+	UNAME_OS = $(MINGW_STR)
+else ifeq ($(findstring $(MACOSX_STR),$(UNAME_OUTPUT)),$(MACOSX_STR))
+	UNAME_OS = $(MACOSX_STR)
+else
+	UNAME_OS = $(UNKNWOWN_OS_STR)
+endif
+
 #Kludge for mingw, it does not have cc.exe, but gcc.exe will do
-ifneq ($(findstring mingw,$(PATH)), "")
+ifeq ($(UNAME_OS),$(MINGW_STR))
 	CC := gcc
+endif
+
+#Kludge for MacOsX gcc compiler on Darwin9 who can't handle pendantic
+
+ifeq ($(UNAME_OS),$(MACOSX_STR))
+ifeq ($(findstring Version 9,$(UNAME_OUTPUT)),Version 9)
+	CPPUTEST_PEDANTIC_ERRORS = N
+endif
 endif
 
 ifndef COMPONENT_NAME
@@ -84,12 +106,20 @@ ifndef CPPUTEST_USE_GCOV
 endif
 
 ifndef CPPUTEST_GCOV_DIR
-    CPPUTEST_GCOV_DIR = gcov
+	CPPUTEST_GCOV_DIR = gcov
+endif
+
+ifndef CPPUTEST_PEDANTIC_ERRORS
+	CPPUTEST_PEDANTIC_ERRORS = Y
 endif
 
 # Default warnings
 ifndef CPPUTEST_WARNINGFLAGS
-	CPPUTEST_WARNINGFLAGS = -pedantic-errors -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+	CPPUTEST_WARNINGFLAGS =  -Wall -Wextra -Werror -Wshadow -Wswitch-default -Wswitch-enum -Wconversion
+ifeq ($(CPPUTEST_PEDANTIC_ERRORS), Y)
+	CPPUTEST_WARNINGFLAGS += -pedantic-errors
+endif 
+	CPPUTEST_CXX_WARNINGFLAGS = -Woverloaded-virtual
 endif
 
 # Default dir for temporary files (d, o)
@@ -124,6 +154,9 @@ endif
 # --------------------------------------
 # derived flags in the following area
 # --------------------------------------
+
+CPPUTEST_CPPFLAGS += -DCPPUTEST_COMPILATION
+
 ifeq ($(CPPUTEST_USE_MEM_LEAK_DETECTION), N)
 	CPPUTEST_CPPFLAGS += -DCPPUTEST_MEM_LEAK_DETECTION_DISABLED
 else
@@ -149,7 +182,7 @@ ifeq ($(CPPUTEST_USE_GCOV), Y)
 endif
 
 CPPUTEST_CPPFLAGS += $(CPPUTEST_WARNINGFLAGS)
-CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE)
+CPPUTEST_CXXFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_NEW_MACRO_FILE) $(CPPUTEST_CXX_WARNINGFLAGS)
 CPPUTEST_CFLAGS += $(CPPUTEST_MEMLEAK_DETECTOR_MALLOC_MACRO_FILE)
 
 TARGET_MAP = $(COMPONENT_NAME).map.txt

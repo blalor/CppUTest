@@ -25,54 +25,19 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef D_JUnitTestOutput_h
-#define D_JUnitTestOutput_h
+#include "CppUTest/TestHarness.h"
 
-#include "TestOutput.h"
-#include "SimpleString.h"
-
-struct JUnitTestOutputImpl;
-struct JUnitTestCaseResultNode;
-
-class JUnitTestOutput: public TestOutput
+TEST_GROUP(PreprocessorTest)
 {
-public:
-	JUnitTestOutput();
-	virtual ~JUnitTestOutput();
-
-	virtual void printTestsStarted();
-	virtual void printTestsEnded(const TestResult& result);
-	virtual void printCurrentTestStarted(const Utest& test);
-	virtual void printCurrentTestEnded(const TestResult& res);
-	virtual void printCurrentGroupStarted(const Utest& test);
-	virtual void printCurrentGroupEnded(const TestResult& res);
-
-	virtual void verbose();
-	virtual void printBuffer(const char*);
-	virtual void print(const char*);
-	virtual void print(long);
-	virtual void print(const TestFailure& failure);
-	virtual void printTestRun(int number, int total);
-
-	virtual void flush();
-
-protected:
-
-	JUnitTestOutputImpl* impl_;
-	void resetTestGroupResult();
-
-	virtual void openFileForWrite(const SimpleString& fileName);
-	virtual void writeTestGroupToFile();
-	virtual void writeToFile(const SimpleString& buffer);
-	virtual void closeFile();
-
-	virtual void writeXmlHeader();
-	virtual void writeTestSuiteSummery();
-	virtual void writeProperties();
-	virtual void writeTestCases();
-	virtual void writeFailure(JUnitTestCaseResultNode* node);
-	virtual void writeFileEnding();
-
 };
 
+/* TODO: Need to fix this on all platforms! */
+#if 0
+#ifndef CPPUTEST_COMPILATION
+
+TEST(PreprocessorTest, FailWhenCPPUTEST_COMPILATIONIsNotDefined)
+{
+	FAIL("CPPUTEST_COMPILATION should always be defined when compiling CppUTest");
+}
+#endif
 #endif
