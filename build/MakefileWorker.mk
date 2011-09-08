@@ -95,6 +95,11 @@ ifndef CPPUTEST_USE_MEM_LEAK_DETECTION
 	CPPUTEST_USE_MEM_LEAK_DETECTION = Y
 endif
 
+# Use the standard C library
+ifndef CPPUTEST_USE_STD_C_LIB
+	CPPUTEST_USE_STD_C_LIB = Y
+endif
+
 # Use the standard C++ library
 ifndef CPPUTEST_USE_STD_CPP_LIB
 	CPPUTEST_USE_STD_CPP_LIB = Y
@@ -154,6 +159,14 @@ endif
 # --------------------------------------
 # derived flags in the following area
 # --------------------------------------
+
+# Without the C library, we'll need to disable the C++ library and ... 
+ifeq ($(CPPUTEST_USE_STD_C_LIB), N)
+	CPPUTEST_USE_STD_CPP_LIB = N
+	CPPUTEST_USE_MEM_LEAK_DETECTION = N
+	CPPUTEST_CPPFLAGS += -DCPPUTEST_STD_C_LIB_DISABLED
+	CPPUTEST_CPPFLAGS += -nostdinc
+endif
 
 CPPUTEST_CPPFLAGS += -DCPPUTEST_COMPILATION
 
